@@ -2,10 +2,6 @@
 
 > 一个 **DeepSeek Harness (DSH)** 的 Cordis 动态插件：在 DSH 网页界面中自动识别本机 Claude Code 工程与会话，将历史会话一键导入到左侧工作区，并可在原工作区上下文里继续对话。
 
-![UI](docs/screenshots/panel.png)
-
----
-
 ## ✨ 功能清单
 
 | 功能 | 说明 |
@@ -17,14 +13,6 @@
 | 📥 导入到工作区 | 选中会话后一键导入：按 `cwd` 创建/复用工作区，历史消息逐条写入真实 DSH 会话，自动打开，可直接继续对话 |
 | 🌗 深色模式 | 自动跟随系统深浅色主题 |
 | ⚡ 性能 | 会话解析结果缓存（LRU 60 条），反复查看秒开；合拢工程自动收起气泡 |
-
-## 🖥️ 界面预览
-
-| 面板与工程列表 | 会话气泡预览 |
-| --- | --- |
-| ![Panel](docs/screenshots/panel.png) | ![Bubble](docs/screenshots/bubble.png) |
-
-> 截图请放入 `docs/screenshots/`（.gitignore 已忽略 `*.png`，仅保留 `.gitkeep` 占位）。你也可以直接替换上面两个图片链接。
 
 ---
 
