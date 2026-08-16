@@ -289,7 +289,6 @@ return {
       const workspaceRegistry = ctx.get('workspaceRegistry')
       const agents = ctx.get('agents')
       const sessions = ctx.get('sessions')
-      const sessionTitle = ctx.get('sessionTitle')
       const agentDefaultModel = ctx.get('agentDefaultModel')
       if (!workspaceRegistry || !agents) return { ok: false, error: 'workspaceRegistry/agents 服务不可用' }
 
@@ -300,6 +299,21 @@ return {
       } catch (e) {
         return { ok: false, error: '工作区创建失败: ' + String((e && e.message) || e) }
       }
+
+      // 清理历史导入产生的临时会话：把 cc-import-* 从所有工作区上摘除，
+      // 避免旧会话被「新会话」逻辑误复用（“新会话显示旧内容”的根源）。
+      let cleanup = 0
+      try {
+        const allWs = workspaceRegistry.list()
+        for (const w of allWs) {
+          const ids = Array.from(w.sessionIds || [])
+          for (const sid of ids) {
+            if (String(sid).startsWith('cc-import-')) {
+              try { await w.detachSession(sid); cleanup++ } catch (e) { /* keep */ }
+            }
+          }
+        }
+      } catch (e) { /* cleanup is best-effort */ }
 
       const agentOptions = {}
       if (agentDefaultModel) {
@@ -328,6 +342,10 @@ return {
       try {
         for (const m of messages) {
           if (m.kind === 'user') {
+            // turn/start 使导入会话被视为“非空白”，正常出现在侧边栏，
+            // 且不会被「新会话」逻辑误复用。
+            session.append('turn/start', { turn: turn + 1 })
+            turn++
             session.append('user/message', {
               id: 'cc-imp-' + count + '-' + Math.random().toString(36).slice(2, 12),
               role: 'user',
@@ -336,7 +354,6 @@ return {
             }, { surfaceOp: 'append' })
             count++
           } else if (m.kind === 'assistant') {
-            turn++
             session.append('assistant/message', {
               turn,
               step: 0,
@@ -350,6 +367,9 @@ return {
             count++
           }
         }
+        if (turn > 0) {
+          session.append('turn/end', { turn, reason: { kind: 'completed' } })
+        }
       } catch (e) {
         return { ok: false, error: '写入消息失败: ' + String((e && e.message) || e) }
       }
@@ -357,15 +377,21 @@ return {
       try {
         await ws.attachSession(session.id)
         if (sessions) await sessions.flush(session)
-        if (sessionTitle && title) {
-          try { sessionTitle.rename(session, title) } catch (e) { /* keep generated */ }
+        if (title) {
+          try {
+            session.append('session/title', {
+              title: String(title).replace(/\s+/g, ' ').trim(),
+              messageSeqs: [],
+              source: { kind: 'user' },
+            })
+          } catch (e) { /* title is best-effort */ }
           if (sessions) await sessions.flush(session)
         }
       } catch (e) {
         return { ok: false, error: '关联工作区/持久化失败: ' + String((e && e.message) || e) }
       }
 
-      return { ok: true, sessionId: String(session.id), workspaceId: String(ws.id), title, total: count }
+      return { ok: true, sessionId: String(session.id), workspaceId: String(ws.id), title, total: count, cleanup }
     })
 
     harness.handle('cc-debug', async () => {

@@ -100,7 +100,7 @@ return {
 
     const store = {
       listeners: new Set(),
-      state: { open: false },
+      state: { open: false, sessionEpoch: 0 },
       get() { return this.state },
       set(patch) {
         this.state = Object.assign({}, this.state, patch)
@@ -173,6 +173,13 @@ return {
           setPopDetail(r)
         }).catch((e) => setPopErr(String(e)))
       }, [popup])
+
+      // 会话切换时自动收起气泡/选中态（sessionEpoch 由头部按钮在 sessionId 变化时递增）
+      React.useEffect(() => {
+        if (popup) {
+          setPopup(null); setPopPos(null); setPopH(0); setSelName(''); setPopDetail(null); setPopErr('')
+        }
+      }, [s.sessionEpoch])
 
       const popRef = (el) => {
         if (!el) return
@@ -322,8 +329,11 @@ return {
 
     slots.inject('conversation.session.header.actions', () => slots.register(
       { name: 'conversation.session.header.actions', id: 'cc-import-toggle', order: 30, label: () => 'Claude 会话' },
-      () => {
+      (props) => {
         const s = useStore()
+        React.useEffect(() => {
+          store.set({ sessionEpoch: (store.get().sessionEpoch || 0) + 1 })
+        }, [props && props.sessionId])
         return React.createElement('button', {
           className: 'cc-toggle',
           onClick: () => store.set({ open: !store.get().open }),

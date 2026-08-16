@@ -11,6 +11,7 @@
 | 🕐 会话排序 | 每个工程内会话按最后活动时间**降序**（最新在前），并显示 `YYYY-MM-DD HH:mm` 时间 |
 | 💬 漫画气泡预览 | 点击会话记录，从该行旁引出**漫画式对话气泡**（带尖头指向），消息按「我 / Claude / 工具 / 摘要」角色分色、左右分列，每条消息带时间戳 |
 | 📥 导入到工作区 | 选中会话后一键导入：按 `cwd` 创建/复用工作区，历史消息逐条写入真实 DSH 会话，自动打开，可直接继续对话 |
+| 🧹 自动清理 | 导入前自动把历史 `cc-import-*` 会话从所有工作区摘除，旧会话不会污染工作区列表，也不会被误开为「新会话」 |
 | 🌗 深色模式 | 自动跟随系统深浅色主题 |
 | ⚡ 性能 | 会话解析结果缓存（LRU 60 条），反复查看秒开；合拢工程自动收起气泡 |
 
@@ -62,7 +63,7 @@
 
 ## 🧩 技术说明
 
-- **Host**：`fs`（读取 JSONL、流式读头部）、`sandboxPolicy.workspaceRoot`（目录爬升探测）、`workspaceRegistry`（工作区创建/复用）、`agents`（通过 `agents.create` 创建 agent+会话，模型选择可用）、`sessions`（flush 持久化）、`sessionTitle`（标题设置）。
+- **Host**：`fs`（读取 JSONL、流式读头部）、`sandboxPolicy.workspaceRoot`（目录爬升探测）、`workspaceRegistry`（工作区创建/复用/摘除会话）、`agents`（通过 `agents.create` 创建 agent+会话，模型选择可用）、`sessions`（flush 持久化）。导入时写入 `turn/start`/`turn/end` 事件（让会话“非空白”、可正常列于侧边栏且不会被「新会话」误复用），并以 `session/title` 事件写入标题；导入前自动摘除历史 `cc-import-*` 会话。
 - **Client**：`conversation.session.header.actions`（入口按钮）、`shell.overlay`（面板）、气泡浮层（实测高度 + 位置自适应 + CSS 尖头）。
 - **Claude Code JSONL 格式**：每行一个 JSON，含 `type: user/assistant/summary`、`message.content`（字符串或 blocks）、`ai-title`、`cwd`、`timestamp` 等字段；解析时跳过 `tool_result`、`thinking` 等噪音块，保留用户/助手文本、工具调用摘要与上下文摘要。
 - **会话 >24MB**：拒绝读取（防止卡死），超大会话暂不支持导入。
