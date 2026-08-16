@@ -1,0 +1,9 @@
+{
+  "name": "Claude Code 会话导入器",
+  "purpose": "在 DSH 中浏览 Claude Code 工程与会话，一键导入到工作区并继续对话",
+  "plugin": {
+    "kind": "new",
+    "idPrefix": "ccim"
+  },
+  "note": "code.host 与 code.client 见 src/host.js 与 src/client.js（均为 cordis_define 的函数体，使用前请先查询当前运行时的 Inspect 目录确认 API 兼容）。"
+}

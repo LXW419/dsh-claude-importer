@@ -1,0 +1,16 @@
+# Node
+node_modules/
+*.log
+
+# DSH / IDE
+.dsh/
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Screenshots placeholder (user-provided)
+docs/screenshots/*.png
+!docs/screenshots/.gitkeep
