@@ -287,8 +287,11 @@ return {
       if (!cwd) return { ok: false, error: '会话中没有 cwd 字段，无法关联工作区' }
 
       const workspaceRegistry = ctx.get('workspaceRegistry')
+      const agents = ctx.get('agents')
       const sessions = ctx.get('sessions')
-      if (!workspaceRegistry || !sessions) return { ok: false, error: 'workspaceRegistry/sessions 服务不可用' }
+      const sessionTitle = ctx.get('sessionTitle')
+      const agentDefaultModel = ctx.get('agentDefaultModel')
+      if (!workspaceRegistry || !agents) return { ok: false, error: 'workspaceRegistry/agents 服务不可用' }
 
       let ws
       try {
@@ -298,12 +301,27 @@ return {
         return { ok: false, error: '工作区创建失败: ' + String((e && e.message) || e) }
       }
 
-      let session
+      const agentOptions = {}
+      if (agentDefaultModel) {
+        try {
+          const sel = agentDefaultModel.currentSelection()
+          if (sel && sel.provider) agentOptions.provider = sel.provider
+          if (sel && sel.model) agentOptions.model = sel.model
+        } catch (e) { /* keep defaults */ }
+      }
+
+      const sessionId = 'cc-import-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10)
+      let handle
       try {
-        session = sessions.create(undefined, { meta: { cwd } })
+        handle = await agents.create({
+          sessionId,
+          meta: { cwd },
+          agentOptions,
+        })
       } catch (e) {
         return { ok: false, error: '会话创建失败: ' + String((e && e.message) || e) }
       }
+      const session = handle.agent.session
 
       let count = 0
       let turn = 0
@@ -338,7 +356,11 @@ return {
 
       try {
         await ws.attachSession(session.id)
-        await sessions.flush(session)
+        if (sessions) await sessions.flush(session)
+        if (sessionTitle && title) {
+          try { sessionTitle.rename(session, title) } catch (e) { /* keep generated */ }
+          if (sessions) await sessions.flush(session)
+        }
       } catch (e) {
         return { ok: false, error: '关联工作区/持久化失败: ' + String((e && e.message) || e) }
       }

@@ -62,7 +62,7 @@
 
 ## 🧩 技术说明
 
-- **Host**：`fs`（读取 JSONL、流式读头部）、`sandboxPolicy.workspaceRoot`（目录爬升探测）、`workspaceRegistry`（工作区创建/复用）、`sessions`（创建会话、`append` 消息、flush 持久化）。
+- **Host**：`fs`（读取 JSONL、流式读头部）、`sandboxPolicy.workspaceRoot`（目录爬升探测）、`workspaceRegistry`（工作区创建/复用）、`agents`（通过 `agents.create` 创建 agent+会话，模型选择可用）、`sessions`（flush 持久化）、`sessionTitle`（标题设置）。
 - **Client**：`conversation.session.header.actions`（入口按钮）、`shell.overlay`（面板）、气泡浮层（实测高度 + 位置自适应 + CSS 尖头）。
 - **Claude Code JSONL 格式**：每行一个 JSON，含 `type: user/assistant/summary`、`message.content`（字符串或 blocks）、`ai-title`、`cwd`、`timestamp` 等字段；解析时跳过 `tool_result`、`thinking` 等噪音块，保留用户/助手文本、工具调用摘要与上下文摘要。
 - **会话 >24MB**：拒绝读取（防止卡死），超大会话暂不支持导入。
@@ -71,6 +71,12 @@
 
 - 插件只**读取** `~/.claude/projects` 下的会话文件；写入仅发生在「导入到工作区」时（创建 DSH 工作区/会话，属 DSH 内部持久化），**不会修改或回写 Claude Code 的任何文件**。
 - 数据均在本地处理，不上传任何内容。
+
+## ⚠️ 已知限制
+
+- **会话标题**：导入后侧边栏暂时显示「新会话」，**发送一条消息后**标题才会正确显示（来自 Claude 会话的原始标题）。
+- **会话持久性**：导入后若**不发言**直接切换会话，该会话可能从列表消失；**发送一条消息后**会话才会持久保留。这是 DSH 动态插件沙箱（调用 fiber 生命周期）的机制限制。
+- **会话 >24MB**：拒绝读取（防止卡死），超大会话暂不支持导入。
 
 ## 📄 License
 
